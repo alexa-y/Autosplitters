@@ -33,12 +33,11 @@ state("IndianaWindowsStore-Win64-Shipping", "v1.1 (MS)")
 
 startup
 {
-	vars.checkSplit = false;
-	vars.splitsUsed = new Dictionary<string, bool>();
+	vars.splitsUsed = new Dictionary<string, int>(); // 0 for quest stage not yet fulfilled, 1 for fulfilled but not yet splitted, 2 for splitted
 
 	Action<string, bool, string, string> AddSplit = (key, enabled, name, group) => {
 		settings.Add(key, enabled, name, group);
-		vars.splitsUsed.Add(key, false);
+		vars.splitsUsed.Add(key, 0);
 	};
 
 	settings.Add("any_percent", true, "Any%");
@@ -56,28 +55,24 @@ isLoading
 	return current.isLoading == 1;
 }
 
-update
-{
-	if (current.isLoading == 1 || old.isLoading == 1)
-	{
-		vars.checkSplit = true;
-	}
-}
-
 split
 {
 	IDictionary<string, Object> currenctDict = (IDictionary<string, Object>) current;
 	IDictionary<string, Object> oldDict = (IDictionary<string, Object>) old;
-	foreach (KeyValuePair<string, bool> pair in vars.splitsUsed)
+	foreach (string key in vars.splitsUsed.Keys)
 	{
-		if (settings[pair.Key] && !pair.Value && vars.checkSplit && Convert.ToInt32(currenctDict[pair.Key]) == 1 && Convert.ToInt32(oldDict[pair.Key]) == 0)
+		int value = vars.splitsUsed[key];
+		if (value == 0 && Convert.ToInt32(currenctDict[key]) == 1 && Convert.ToInt32(oldDict[key]) == 0)
 		{
-			vars.splitsUsed[pair.Key] = true;
-			vars.checkSplit = false;
+			vars.splitsUsed[key] = 1;
+			return false;
+		}
+		if (settings[key] && value == 1 && current.isLoading == 1)
+		{
+			vars.splitsUsed[key] = 2;
 			return true;
 		}
 	}
-	vars.checkSplit = false;
 }
 
 init
