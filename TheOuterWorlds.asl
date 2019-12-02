@@ -1,7 +1,8 @@
 //The Outer Worlds Autosplitter
 //Created by MissyLexie & Micrologist
-//Version 0.4 (2019-11-30)
+//Version 0.5 (2019-12-01)
 //Compatible with EGS 1.0, EGS 1.1 & MS 1.1
+
 
 state("IndianaEpicGameStore-Win64-Shipping", "v1.0 (EGS)")
 {
@@ -25,7 +26,7 @@ state("IndianaEpicGameStore-Win64-Shipping", "v1.0 (EGS)")
 	byte labPanelOpened : 0x03D9C7F8, 0x20, 0x0, 0x8, 0x18, 0x8, 0x0, 0xF9B0;
 	byte tartarusFinalCellOpened : 0x03D9C7F8, 0x20, 0x0, 0x8, 0x18, 0x8, 0x0, 0xE8B0;
 
-	byte cutsceneId : 0x039E2370, 0x350, 0x18, 0x40, 0x8, 0xC8;
+	byte cutsceneId : 0x03D8F140, 0x1C8, 0xB8, 0x40, 0x8, 0xC8;
 }
 
 state("IndianaEpicGameStore-Win64-Shipping", "v1.1 (EGS)")
@@ -50,7 +51,7 @@ state("IndianaEpicGameStore-Win64-Shipping", "v1.1 (EGS)")
 	byte labPanelOpened : 0x03DA3978, 0x20, 0x0, 0x8, 0x18, 0x8, 0x0, 0xF9B0;
 	byte tartarusFinalCellOpened : 0x03DA3978, 0x20, 0x0, 0x8, 0x18, 0x8, 0x0, 0xE8B0;
 
-	byte cutsceneId : 0x039E9510, 0x350, 0x18, 0x40, 0x0, 0xB0;
+	byte cutsceneId : 0x03D9ABC8, 0x8, 0xA8, 0xA8, 0x0, 0xB0;
 }
 
 state("IndianaWindowsStore-Win64-Shipping", "v1.0 (MS)")
@@ -107,6 +108,8 @@ startup
 {
 	vars.startAfterNextLoad = false;
 	vars.cutsceneOffset = 0;
+	vars.lastCutsceneId = 0;
+	vars.thisCutsceneId = 0;
 
 	vars.splitsUsed = new Dictionary<string, int>(); // 0 for quest stage not yet fulfilled, 1 for fulfilled but not yet splitted, 2 for splitted
 	Action<string, bool, string, string> AddSplit = (key, enabled, name, group) => {
@@ -114,7 +117,7 @@ startup
 		vars.splitsUsed.Add(key, 0);
 	};
 
-	settings.Add("any_percent", false, "Any%");
+	settings.Add("any_percent", true, "Any%");
 	AddSplit("adaId", false, "Obtained captain's ID from ADA (Ship)", "any_percent");
 	AddSplit("metReed", false, "Met with Reed (Edgewater 1)", "any_percent");
 	AddSplit("powerToDeserters", false, "Sent power to Deserters (Geothermal 1)", "any_percent");
@@ -147,7 +150,6 @@ isLoading
 
 split
 {
-
 	if (settings["dumbEnding"] & current.cutsceneId == 71 + vars.cutsceneOffset & old.cutsceneId == 0)
 	{
 		return true;
@@ -164,7 +166,7 @@ split
 			vars.splitsUsed[key] = 1;
 			return false;
 		}
-		if (settings[key] && value == 1 && current.isLoading == 1)
+		if (settings[key] && value == 1 && Convert.ToInt32(currenctDict[key]) == 1 && current.isLoading == 1 && old.isLoading == 0)
 		{
 			vars.splitsUsed[key] = 2;
 			return true;
@@ -172,15 +174,37 @@ split
 	}
 }
 
+update
+{
+	/*
+	if (vars.cutsceneOffset == -999999 & current.cutsceneId != 0){
+		vars.cutsceneOffset = current.cutsceneId - 96;
+	}
+	*/
+
+	//This is still janky but should work every time
+	if(current.cutsceneId != old.cutsceneId && current.cutsceneId != 0){
+		vars.lastCutsceneId = vars.thisCutsceneId;
+		vars.thisCutsceneId = current.cutsceneId;
+
+		if(vars.thisCutsceneId - vars.lastCutsceneId == 1){
+			vars.cutsceneOffset = vars.thisCutsceneId - 97;
+			print("Found new cutsceneoffset: "+vars.cutsceneOffset.ToString());
+		}
+	}
+}
+
+
 start
 {
+	List<string> keyDict = new List<string>(vars.splitsUsed.Keys);
+	foreach (string key in keyDict)
+	{
+			vars.splitsUsed[key] = 0;
+	}
+
 	if (current.cutsceneId == 89 + vars.cutsceneOffset)
 	{
-		List<string> keyDict = new List<string>(vars.splitsUsed.Keys);
-		foreach (string key in keyDict)
-		{
-				vars.splitsUsed[key] = 0;
-		}
 		vars.startAfterNextLoad = true;
 	}
 
@@ -205,17 +229,18 @@ init
 	if (moduleSize == 71692288)
 	{
 		version = "v1.0 (EGS)";
-		vars.cutsceneOffset = 4;
+		//vars.cutsceneOffset = 4;
 	} else if (moduleSize == 71729152)
 	{
 		version = "v1.1 (EGS)";
-		vars.cutsceneOffset = 0;
+		//vars.cutsceneOffset = -999999;
 	} else if (moduleSize == 74125312)
 	{
 		version = "v1.1 (MS)";
-		vars.cutsceneOffset = 74;
+		//vars.cutsceneOffset = 74;
 	} else
 	{
 		version = "v1.0 (MS)";
 	}
+	vars.cutsceneOffset = -999999;
 }
