@@ -1,7 +1,6 @@
 //The Outer Worlds Load Remover
-//Originally created by Jabo
-//Updated by MissyLexie & Micrologist
-//Version 1.1.5 (2019-11-27)
+//Created by MissyLexie & Micrologist
+//Version 1.1.6 (2019-12-13)
 
 
 state("IndianaEpicGameStore-Win64-Shipping", "v1.0 (EGS)")
@@ -12,6 +11,11 @@ state("IndianaEpicGameStore-Win64-Shipping", "v1.0 (EGS)")
 state("IndianaEpicGameStore-Win64-Shipping", "v1.1 (EGS)")
 {
 	byte isLoading : 0x3F0E710, 0x20, 0x10, 0x28, 0x10, 0x160;
+}
+
+state("IndianaEpicGameStore-Win64-Shipping", "v1.2 (EGS)")
+{
+	byte isLoading : 0x3F341D0, 0x40, 0x10, 0x20, 0x10, 0x450;
 }
 
 state("IndianaWindowsStore-Win64-Shipping", "v1.0 (MS)")
@@ -44,6 +48,9 @@ init
 	} else if (moduleSize == 71729152)
 	{
 		version = "v1.1 (EGS)";
+	} else if (moduleSize == 71880704)
+	{
+		version = "v1.2 (EGS)";
 	} else if (moduleSize == 74125312)
 	{
 		version = "v1.1 (MS)";
