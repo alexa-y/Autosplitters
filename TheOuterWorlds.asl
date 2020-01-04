@@ -1,11 +1,11 @@
 //The Outer Worlds Load Remover
 //Created by MissyLexie & Micrologist
-//Version 1.1.6 (2019-12-13)
+//Version 1.1.7 (2020-01-04)
 
 
 state("IndianaEpicGameStore-Win64-Shipping", "v1.0 (EGS)")
 {
-	byte isLoading : 0x3FD3900, 0x38, 0x5D8, 0x2A0, 0x5A0, 0x450;
+  byte isLoading : 0x03D98228, 0x1E8, 0x20, 0x210, 0x4D0;
 }
 
 state("IndianaEpicGameStore-Win64-Shipping", "v1.1 (EGS)")
