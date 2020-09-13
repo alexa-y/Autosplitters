@@ -1,6 +1,6 @@
 //The Outer Worlds Load Remover
 //Created by MissyLexie & Micrologist
-//2020-09-11.1
+//2020-09-13.2
 
 
 state("IndianaEpicGameStore-Win64-Shipping", "v1.0 (EGS)")
@@ -26,6 +26,9 @@ state("IndianaEpicGameStore-Win64-Shipping", "v1.0 (EGS)")
     byte sophiaAfterEdgewater : 0x03D9C7F8, 0x20, 0x0, 0x8, 0x18, 0x8, 0x0, 0x42F0;
     byte adaPatchedHope : 0x03D9C7F8, 0x20, 0x0, 0x8, 0x18, 0x8, 0x0, 0xF8F0;
     byte labPanelOpened : 0x03D9C7F8, 0x20, 0x0, 0x8, 0x18, 0x8, 0x0, 0xF9B0;
+    
+    byte dlcFinished : 0x0;
+    string250 map : 0x0;
 }
 
 state("IndianaEpicGameStore-Win64-Shipping", "v1.1 (EGS)")
@@ -51,6 +54,9 @@ state("IndianaEpicGameStore-Win64-Shipping", "v1.1 (EGS)")
     byte sophiaAfterEdgewater : 0x03DA3978, 0x20, 0x0, 0x8, 0x18, 0x8, 0x0, 0x42F0;
     byte adaPatchedHope : 0x03DA3978, 0x20, 0x0, 0x8, 0x18, 0x8, 0x0, 0xF8F0;
     byte labPanelOpened : 0x03DA3978, 0x20, 0x0, 0x8, 0x18, 0x8, 0x0, 0xF9B0;
+    
+    byte dlcFinished : 0x0;
+    string250 map : 0x0;
 }
 
 state("IndianaEpicGameStore-Win64-Shipping", "v1.4 (EGS)")
