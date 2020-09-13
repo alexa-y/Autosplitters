@@ -2,7 +2,6 @@
 //Created by MissyLexie & Micrologist
 //2020-09-13.2
 
-
 state("IndianaEpicGameStore-Win64-Shipping", "v1.0 (EGS)")
 {
     bool isLoading : 0x03D98228, 0x1E8, 0x20, 0x210, 0x4D0;
@@ -26,7 +25,7 @@ state("IndianaEpicGameStore-Win64-Shipping", "v1.0 (EGS)")
     byte sophiaAfterEdgewater : 0x03D9C7F8, 0x20, 0x0, 0x8, 0x18, 0x8, 0x0, 0x42F0;
     byte adaPatchedHope : 0x03D9C7F8, 0x20, 0x0, 0x8, 0x18, 0x8, 0x0, 0xF8F0;
     byte labPanelOpened : 0x03D9C7F8, 0x20, 0x0, 0x8, 0x18, 0x8, 0x0, 0xF9B0;
-    
+
     byte dlcFinished : 0x0;
     string250 map : 0x0;
 }
@@ -54,7 +53,7 @@ state("IndianaEpicGameStore-Win64-Shipping", "v1.1 (EGS)")
     byte sophiaAfterEdgewater : 0x03DA3978, 0x20, 0x0, 0x8, 0x18, 0x8, 0x0, 0x42F0;
     byte adaPatchedHope : 0x03DA3978, 0x20, 0x0, 0x8, 0x18, 0x8, 0x0, 0xF8F0;
     byte labPanelOpened : 0x03DA3978, 0x20, 0x0, 0x8, 0x18, 0x8, 0x0, 0xF9B0;
-    
+
     byte dlcFinished : 0x0;
     string250 map : 0x0;
 }
@@ -74,7 +73,6 @@ startup
     settings.Add("dumbEnding", true, "Dumb Ending", "splitEnding");
     settings.Add("trueEnding", true, "True Ending", "splitEnding");
     settings.Add("dlcEnding", true, "DLC Ending", "splitEnding");
-    
 
     if (timer.CurrentTimingMethod == TimingMethod.RealTime)
     {
@@ -172,6 +170,14 @@ update
 
 start
 {
+    if (settings["any_percent"])
+    {
+        List<string> keyDict = new List<string>(vars.splitsUsed.Keys);
+        foreach (string key in keyDict)
+        {
+            vars.splitsUsed[key] = 0;
+        }
+    }
     if (current.cutsceneId == 89 + vars.cutsceneOffset)
     {
         vars.startAfterNextLoad = true;
@@ -198,7 +204,7 @@ split
         return true;
     }
 
-    if (!settings["any_percent"])
+    if (!settings["any_percent"] || version.Contains("1.4"))
         return false;
 
     IDictionary<string, Object> currenctDict = (IDictionary<string, Object>) current;
@@ -211,7 +217,7 @@ split
         {
             vars.splitsUsed[key] = 1;
         }
-        if (settings[key] && value == 1 && Convert.ToInt32(currenctDict[key]) > 0 && current.isLoading == 1 && old.isLoading == 0)
+        if (settings[key] && value == 1 && Convert.ToInt32(currenctDict[key]) > 0 && current.isLoading && !old.isLoading)
         {
             vars.splitsUsed[key] = 2;
             return true;
