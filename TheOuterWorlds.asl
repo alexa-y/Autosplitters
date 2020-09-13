@@ -1,6 +1,7 @@
 //The Outer Worlds Load Remover
 //Created by MissyLexie & Micrologist
-//2020-09-11.2
+//2020-09-11.1
+
 
 state("IndianaEpicGameStore-Win64-Shipping", "v1.0 (EGS)")
 {
@@ -57,6 +58,7 @@ state("IndianaEpicGameStore-Win64-Shipping", "v1.4 (EGS)")
     bool isLoading : 0x03E6A900, 0x1E8, 0x20, 0x220, 0x4E0;
     byte cutsceneId : 0x03E659E8, 0x8, 0xA8, 0xA8, 0x0, 0xB0;
     byte tartarusFinalCellOpened : 0x03E70180, 0x20, 0x0, 0x8, 0x18, 0x8, 0x0, 0xE8B0;
+    byte dlcFinished : 0x03E6A900, 0x198, 0x0, 0x16650;
     string250 map : 0x040D1520, 0x5D8, 0x0;
 }
 
@@ -65,6 +67,8 @@ startup
     settings.Add("splitEnding", true, "Ending Splits");
     settings.Add("dumbEnding", true, "Dumb Ending", "splitEnding");
     settings.Add("trueEnding", true, "True Ending", "splitEnding");
+    settings.Add("dlcEnding", true, "DLC Ending", "splitEnding");
+    
 
     if (timer.CurrentTimingMethod == TimingMethod.RealTime)
     {
@@ -180,6 +184,10 @@ split
         return true;
     }
     if (settings["trueEnding"] && current.tartarusFinalCellOpened == 2 && current.isLoading)
+    {
+        return true;
+    }
+    if (settings["dlcEnding"] && current.dlcFinished > 0 && old.dlcFinished == 0)
     {
         return true;
     }
