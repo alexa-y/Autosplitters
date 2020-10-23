@@ -1,6 +1,6 @@
 //The Outer Worlds Load Remover
 //Created by MissyLexie & Micrologist
-//2020-10-08.1
+//2020-10-23.1
 
 state("IndianaEpicGameStore-Win64-Shipping", "v1.0 (EGS)")
 {
@@ -73,7 +73,16 @@ state("IndianaEpicGameStore-Win64-Shipping", "v1.4.1 (EGS)")
     byte cutsceneId : 0x03E69968, 0x8, 0xA8, 0xA8, 0x0, 0xB0;
     byte tartarusFinalCellOpened : 0x03E74100, 0x20, 0x0, 0x8, 0x18, 0x8, 0x0, 0xE8B0;
     byte dlcFinished : 0x03E6E880, 0x198, 0x0, 0x16650;
-    string250 map : 0x0;
+    string250 map : 0x040D1520, 0x5D8, 0x0;
+}
+
+state("IndianaWindowsStore-Win64-Shipping", "v1.4.1 (MS)")
+{
+    bool isLoading : 0x040C2F30, 0x1E8, 0x20, 0x220, 0x4E0;
+    byte cutsceneId : 0x040BE068, 0x8, 0xA8, 0xA8, 0x0, 0xB0;
+    byte tartarusFinalCellOpened : 0x040C87A0, 0x20, 0x0, 0x8, 0x18, 0x8, 0x0, 0xE8B0;
+    byte dlcFinished : 0x040C2F30, 0x198, 0x0, 0x16650;
+    string250 map : 0x04329AA0, 0x5D8, 0x0;
 }
 
 startup
@@ -148,6 +157,9 @@ init
             break;
         case 72650752:
             version = "v1.4.1 (EGS)";
+            break;
+        case 75083776:
+            version = "v1.4.1 (MS)";
             break;
         default:
             version = "Unsupported - " + moduleSize.ToString();
