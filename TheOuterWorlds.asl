@@ -1,6 +1,6 @@
 //The Outer Worlds Load Remover
 //Created by MissyLexie & Micrologist
-//2020-10-23.1
+//2021-04-06.1
 
 state("IndianaEpicGameStore-Win64-Shipping", "v1.0 (EGS)")
 {
@@ -85,6 +85,17 @@ state("IndianaWindowsStore-Win64-Shipping", "v1.4.1 (MS)")
     string250 map : 0x04329AA0, 0x5D8, 0x0;
 }
 
+state("IndianaEpicGameStore-Win64-Shipping", "v1.5.1 (EGS)")
+{
+    bool isLoading : 0x03E8E488, 0x1E8, 0x20, 0x220, 0x4F0;
+    byte cutsceneId : 0x03E89568, 0x8, 0xA8, 0xA8, 0x0, 0xB0;
+    byte tartarusFinalCellOpened : 0x03E93D20, 0x20, 0x0, 0x8, 0x18, 0x8, 0x0, 0xE8B0;
+    byte dlcFinished : 0x03E8E488, 0x198, 0x0, 0x16690;
+    string250 map : 0x0; //todo
+    //todo dlc2 ending
+}
+
+
 startup
 {
     settings.Add("splitEnding", true, "Ending Splits");
@@ -160,6 +171,9 @@ init
             break;
         case 75083776:
             version = "v1.4.1 (MS)";
+            break;
+        case 72798208:
+            version = "v1.5.1 (EGS)";
             break;
         default:
             version = "Unsupported - " + moduleSize.ToString();
