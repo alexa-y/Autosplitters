@@ -35,61 +35,45 @@ startup
             textSetting.GetType().GetProperty("Text2").SetValue(textSetting, text);
 	});
 
-    //All of these state keys need to have a matching entry in the settings dict, otherwise we will look up non-existant keys there later
-    vars.trackedStates = new List<String>() {
-        "00_ADAGavePlayerSmugglerID",
-        "PQ0002_ToldAboutUltimatumByReed",
-        "0004_sfx_botanical_power_on",
-        "0004_sfx_edgewater_power_on",
-        "PQ0001_AcquiredPowerRegulator",
-        "PQ0001_ReturnedAfterInstalling",
-        "TA_0101_UdomChat",
-        "02_PresentationChairmanFinished",
-        "PQ0201_RetrievedChemicals",
-        "PQ0201_ReturnedToScientist",
-        "Ellie_Topics_BoardPath_Bug",
-        "PQ0206_PodDoorState",
-        "MaxDead",
-        "PQ0206_KilledAllAutomechanicals",
-        "PQ0206_ReturnedToSophia",
-        "0903_Playerisonthebridge",
-        "0903_SecretPanel",
+
+    vars.doneSplits = new List<string>();
+    vars.trackedStates = new List<String>();
+    Action<string, bool, string, string> AddSplit = (key, enabled, name, group) =>
+    {
+        settings.Add(key, enabled, name, group);
+        vars.trackedStates.Add(key);
     };
 
-#region Settings
     settings.Add("splitEnding", true, "Ending Splits");
     settings.Add("dumbEnding", true, "Dumb Ending", "splitEnding");
     settings.Add("trueEnding", true, "True Ending", "splitEnding");
     settings.Add("dlc1Ending", true, "DLC1 Ending", "splitEnding");
 
     settings.Add("any_percent", false, "Any% Splits");
-    settings.Add("00_ADAGavePlayerSmugglerID", false, "Obtained ID from ADA (Ship)", "any_percent");
-    settings.Add("PQ0002_ToldAboutUltimatumByReed", false, "Met Reed (Edgewater 1)", "any_percent");
-    settings.Add("0004_sfx_botanical_power_on", false, "Sent power to Deserters (Geothermal 1)", "any_percent");
-    settings.Add("0004_sfx_edgewater_power_on", false, "Sent power to Edgewater (Geothermal 1)", "any_percent");
-    settings.Add("PQ0001_AcquiredPowerRegulator", false, "Obtained power regulator (Edgewater 2)", "any_percent");
-    settings.Add("PQ0001_ReturnedAfterInstalling", false, "Left Emerald Vale (Orbit)", "any_percent");
-    settings.Add("TA_0101_UdomChat", false, "Left Groundbreaker (Groundbreaker)", "any_percent");
-    settings.Add("02_PresentationChairmanFinished", false, "Watched chairman presentation (HHC Building 1)", "any_percent");
-    settings.Add("PQ0201_RetrievedChemicals", false, "Stole chemicals (Ministry)", "any_percent");
-    settings.Add("PQ0201_ReturnedToScientist", false, "Brought chemicals to Phineas (Phineas Lab 1, Sun/Phineas)", "any_percent");
-    settings.Add("Ellie_Topics_BoardPath_Bug", false, "Tracked Phineas' terminal (Phineas Lab 1, Board)", "any_percent");
-    settings.Add("PQ0206_PodDoorState", false, "Talked to Sophia about Edgewater (HHC Building 2)", "any_percent");
-    settings.Add("MaxDead", false, "Ran Edgewater Termination Protocol (Geothermal 2)", "any_percent");
-    settings.Add("PQ0206_KilledAllAutomechanicals", false, "Killed Robots in Edgewater (Edgewater 3)", "any_percent");
-    settings.Add("PQ0206_ReturnedToSophia", false, "Talked to Sophia about the Hope (HHC Building 3)", "any_percent");
-    settings.Add("0903_Playerisonthebridge", false, "Skipped the Hope (Hope)", "any_percent");
-    settings.Add("0903_SecretPanel", false, "Opened the secret panel in Phineas' Lab (Phineas Lab 2)", "any_percent");
+    AddSplit("00_ADAGavePlayerSmugglerID", false, "Obtained ID from ADA (Ship)", "any_percent");
+    AddSplit("PQ0002_ToldAboutUltimatumByReed", false, "Met Reed (Edgewater 1)", "any_percent");
+    AddSplit("0004_sfx_botanical_power_on", false, "Sent power to Deserters (Geothermal 1)", "any_percent");
+    AddSplit("0004_sfx_edgewater_power_on", false, "Sent power to Edgewater (Geothermal 1)", "any_percent");
+    AddSplit("PQ0001_AcquiredPowerRegulator", false, "Obtained power regulator (Edgewater 2)", "any_percent");
+    AddSplit("PQ0001_ReturnedAfterInstalling", false, "Left Emerald Vale (Orbit)", "any_percent");
+    AddSplit("TA_0101_UdomChat", false, "Left Groundbreaker (Groundbreaker)", "any_percent");
+    AddSplit("02_PresentationChairmanFinished", false, "Watched chairman presentation (HHC Building 1)", "any_percent");
+    AddSplit("PQ0201_RetrievedChemicals", false, "Stole chemicals (Ministry)", "any_percent");
+    AddSplit("PQ0201_ReturnedToScientist", false, "Brought chemicals to Phineas (Phineas Lab 1, Sun/Phineas)", "any_percent");
+    AddSplit("Ellie_Topics_BoardPath_Bug", false, "Tracked Phineas' terminal (Phineas Lab 1, Board)", "any_percent");
+    AddSplit("PQ0206_PodDoorState", false, "Talked to Sophia about Edgewater (HHC Building 2)", "any_percent");
+    AddSplit("MaxDead", false, "Ran Edgewater Termination Protocol (Geothermal 2)", "any_percent");
+    AddSplit("PQ0206_KilledAllAutomechanicals", false, "Killed Robots in Edgewater (Edgewater 3)", "any_percent");
+    AddSplit("PQ0206_ReturnedToSophia", false, "Talked to Sophia about the Hope (HHC Building 3)", "any_percent");
+    AddSplit("0903_Playerisonthebridge", false, "Skipped the Hope (Hope)", "any_percent");
+    AddSplit("0903_SecretPanel", false, "Opened the secret panel in Phineas' Lab (Phineas Lab 2)", "any_percent");
 
     settings.Add("debugTextComponents", false, "[DEBUG] Show tracked values in layout");
     settings.Add("debugProgressionStates", false, "[DEBUG] Show progression states in layout");
-#endregion
-    vars.doneSplits = new List<string>();
 }
 
 init
 {
-#region Base Pointer Scanning
     vars.GetStaticPointerFromSig = (Func<string, int, IntPtr>) ( (signature, instructionOffset) => {
         var scanner = new SignatureScanner(game, modules.First().BaseAddress, (int)modules.First().ModuleMemorySize);
         var pattern = new SigScanTarget(signature);
@@ -109,9 +93,7 @@ init
     {
         throw new Exception("One ore more Base Classes not found - trying again");
     }
-#endregion
     
-#region Version Detection
     vars.gameVersion = new DeepPointer((IntPtr)vars.GameVersionPtr, 0x0).DerefString(game, 64);
 
     if(String.IsNullOrEmpty(vars.gameVersion) || vars.gameVersion == "1.0.0")
@@ -121,9 +103,8 @@ init
 
     string storeFront = Path.GetFileNameWithoutExtension(game.MainModule.FileName).Replace("Indiana","").Replace("-Win64-Shipping","");
     version = vars.gameVersion + " (" + (!String.IsNullOrEmpty(storeFront) ? storeFront : "Steam") + ")";
-#endregion
 
-#region Memory Watcher Setup
+
     vars.watchers = new MemoryWatcherList
     {
         new MemoryWatcher<IntPtr>(new DeepPointer(vars.CutsceneBase, 0x8, 0xA8, 0xA8, 0x0, 0xA8)) { Name = "cutscenePathPtr" },
@@ -146,9 +127,8 @@ init
     }
     vars.watchers.Add(loadingWatcher);
     vars.watchers.UpdateAll(game);
-#endregion
 
-#region Quest State Initialization
+
     if(String.IsNullOrEmpty(vars.watchers["mapPath"].Current) || vars.watchers["isLoading"].Current)
     { 
         throw new Exception("Quest states not initialized - trying again");
@@ -211,7 +191,6 @@ init
         vars.doneSplits.Add("dlc1Ending");
         print("DLC1 Ending was completed when running init - considering it done.");
     }
-#endregion
 
     current.map = "None";
     current.loading = true;
@@ -240,7 +219,6 @@ update
         vars.currentStates[kvp.Key] = newValue;
     }
 
-#region Debug Output
     if(settings["debugTextComponents"])
     {
         vars.SetTextComponent("map", current.map);
@@ -261,7 +239,6 @@ update
             vars.SetTextComponent(kvp.Key, kvp.Value.ToString());
         }
     }
-#endregion
 }
 
 start
