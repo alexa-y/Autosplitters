@@ -132,7 +132,7 @@ init
     };
     
     MemoryWatcher loadingWatcher;
-    if(vars.gameVersion.StartsWith("1.0") || vars.gameVersion.StartsWith("1.1") || vars.gameVersion.StartsWith("1.3"))
+    if(vars.gameVersion.StartsWith("1.0") || vars.gameVersion.StartsWith("1.1") || vars.gameVersion.StartsWith("1.2") || vars.gameVersion.StartsWith("1.3"))
     {
         loadingWatcher = new MemoryWatcher<bool>(new DeepPointer(vars.GameInstance, 0x210, 0x4D0)) { Name = "isLoading" };
     }
