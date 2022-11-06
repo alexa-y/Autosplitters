@@ -70,6 +70,8 @@ startup
 
     settings.Add("debugTextComponents", false, "[DEBUG] Show tracked values in layout");
     settings.Add("debugProgressionStates", false, "[DEBUG] Show progression states in layout");
+
+    vars.CancelSource = new CancellationTokenSource();
 }
 
 init
@@ -83,125 +85,151 @@ init
         return (IntPtr)location + offset + instructionOffset + 0x4;
     });
 
-    vars.GameVersionPtr = vars.GetStaticPointerFromSig("4C 0F 45 0D ?? ?? ?? ?? 48 8D 15 ?? ?? ?? ?? 48 8D 4C 24 ?? 89 44 24", 0x4);
-    vars.UWorld = vars.GetStaticPointerFromSig("0F 2E ?? 74 ?? 48 8B 1D ?? ?? ?? ?? 48 85 DB 74", 0x8);
-    vars.GameInstance = vars.GetStaticPointerFromSig("48 8B 0D ?? ?? ?? ?? 48 8B 89 ?? ?? ?? ?? E8 ?? ?? ?? ?? F0 FF 4B ?? 48 8B 4B ?? 48 85 C9", 0x3);
-    vars.CutsceneBase = vars.GetStaticPointerFromSig("0F 10 05 ?? ?? ?? ?? 0F 11 45 F0 66 0F 73 D8 08 66 48 0F 7E C0 48 85 C0", 0x3);
-    vars.QuestStateBase = vars.GetStaticPointerFromSig("48 83 C7 30 83 EE 01 75 ?? 48 8B 3D ?? ?? ?? ??", 0xC);
+    vars.initialized = false;
+    vars.CancelSource = new CancellationTokenSource();
 
-    if(vars.GameVersionPtr == IntPtr.Zero || vars.UWorld == IntPtr.Zero || vars.GameInstance == IntPtr.Zero || vars.CutsceneBase == IntPtr.Zero || vars.QuestStateBase == IntPtr.Zero)
+    //Since a lot of the initialization here will not work immediately after game start, we run it on its own thread to not choke LiveSplit's main thread
+    System.Threading.Tasks.Task.Run(async () =>
     {
-        throw new Exception("One ore more Base Classes not found - trying again");
-    }
-    
-    vars.gameVersion = new DeepPointer((IntPtr)vars.GameVersionPtr, 0x0).DerefString(game, 64);
-
-    if(String.IsNullOrEmpty(vars.gameVersion) || vars.gameVersion == "1.0.0")
-    {
-        throw new Exception("Version detection failed - trying again");
-    }
-
-    string storeFront = Path.GetFileNameWithoutExtension(game.MainModule.FileName).Replace("Indiana","").Replace("-Win64-Shipping","");
-    version = vars.gameVersion + " (" + (!String.IsNullOrEmpty(storeFront) ? storeFront : "Steam") + ")";
-
-
-    vars.watchers = new MemoryWatcherList
-    {
-        new MemoryWatcher<IntPtr>(new DeepPointer(vars.CutsceneBase, 0x8, 0xA8, 0xA8, 0x0, 0xA8)) { Name = "cutscenePathPtr" },
-        new StringWatcher(new DeepPointer(vars.UWorld, 0x5D8, 0x0), 255) { Name = "mapPath"},
-        new MemoryWatcher<IntPtr>(new DeepPointer(vars.QuestStateBase, 0x20, 0x0, 0x8, 0x18, 0x8, 0x0)) { Name = "statePtr" },
-    };
-    
-    MemoryWatcher loadingWatcher;
-    if(vars.gameVersion.StartsWith("1.0") || vars.gameVersion.StartsWith("1.1") || vars.gameVersion.StartsWith("1.2") || vars.gameVersion.StartsWith("1.3"))
-    {
-        loadingWatcher = new MemoryWatcher<bool>(new DeepPointer(vars.GameInstance, 0x210, 0x4D0)) { Name = "isLoading" };
-    }
-    else if(vars.gameVersion.StartsWith("1.4"))
-    {
-        loadingWatcher = new MemoryWatcher<bool>(new DeepPointer(vars.GameInstance, 0x220, 0x4E0)) { Name = "isLoading" };
-    }
-    else
-    {
-        loadingWatcher = new MemoryWatcher<bool>(new DeepPointer(vars.GameInstance, 0x220, 0x4F0)) { Name = "isLoading" };
-    }
-    vars.watchers.Add(loadingWatcher);
-    vars.watchers.UpdateAll(game);
-
-
-    if(String.IsNullOrEmpty(vars.watchers["mapPath"].Current) || vars.watchers["isLoading"].Current)
-    { 
-        throw new Exception("Quest states not initialized - trying again");
-    }
-
-    //Dont override the list of done splits if the timer is running and we rehook (e.g. after game crash)
-    if(timer.CurrentPhase == TimerPhase.NotRunning)
-    {
-        vars.doneSplits = new List<string>();
-    }
-
-    vars.stateOffsets = new Dictionary<string, int>();
-    vars.currentStates = new Dictionary<string, int>();
-    //Old States is currently completely unused, might consider removing it
-    vars.oldStates = new Dictionary<string, int>();
-    vars.dlc1Found = false;
-    vars.dlc2Found = false;
-
-    IntPtr currentStatePtr = vars.watchers["statePtr"].Current;
-    for (int i = 0; i < 4000; i++)
-    {
-        string key = new DeepPointer(currentStatePtr + (i * 0x20), 0).DerefString(game, 255);
-
-        //Sometimes certain state entries get deleted when they aren't useful anymore (e.g. clearing the path at the beginning of the game)
-        //This will leave a nullptr gap in the array, hence we have to continue here rather than break
-        if (String.IsNullOrEmpty(key))
+        while(!vars.initialized && !vars.CancelSource.IsCancellationRequested)
         {
-            continue;
+            try
+            {
+                vars.GameVersionPtr = vars.GetStaticPointerFromSig("4C 0F 45 0D ?? ?? ?? ?? 48 8D 15 ?? ?? ?? ?? 48 8D 4C 24 ?? 89 44 24", 0x4);
+                vars.UWorld = vars.GetStaticPointerFromSig("0F 2E ?? 74 ?? 48 8B 1D ?? ?? ?? ?? 48 85 DB 74", 0x8);
+                vars.GameInstance = vars.GetStaticPointerFromSig("48 8B 0D ?? ?? ?? ?? 48 8B 89 ?? ?? ?? ?? E8 ?? ?? ?? ?? F0 FF 4B ?? 48 8B 4B ?? 48 85 C9", 0x3);
+                vars.CutsceneBase = vars.GetStaticPointerFromSig("0F 10 05 ?? ?? ?? ?? 0F 11 45 F0 66 0F 73 D8 08 66 48 0F 7E C0 48 85 C0", 0x3);
+                vars.QuestStateBase = vars.GetStaticPointerFromSig("48 83 C7 30 83 EE 01 75 ?? 48 8B 3D ?? ?? ?? ??", 0xC);
+
+                if(vars.GameVersionPtr == IntPtr.Zero || vars.UWorld == IntPtr.Zero || vars.GameInstance == IntPtr.Zero || vars.CutsceneBase == IntPtr.Zero || vars.QuestStateBase == IntPtr.Zero)
+                {
+                    throw new Exception("One ore more Base Classes not found - trying again");
+                }
+                
+                vars.gameVersion = new DeepPointer((IntPtr)vars.GameVersionPtr, 0x0).DerefString(game, 64);
+
+                if(String.IsNullOrEmpty(vars.gameVersion) || vars.gameVersion == "1.0.0")
+                {
+                    throw new Exception("Version detection failed - trying again");
+                }
+
+                string storeFront = Path.GetFileNameWithoutExtension(game.MainModule.FileName).Replace("Indiana","").Replace("-Win64-Shipping","");
+                version = vars.gameVersion + " (" + (!String.IsNullOrEmpty(storeFront) ? storeFront : "Steam") + ")";
+
+
+                vars.watchers = new MemoryWatcherList
+                {
+                    new MemoryWatcher<IntPtr>(new DeepPointer(vars.CutsceneBase, 0x8, 0xA8, 0xA8, 0x0, 0xA8)) { Name = "cutscenePathPtr" },
+                    new StringWatcher(new DeepPointer(vars.UWorld, 0x5D8, 0x0), 255) { Name = "mapPath"},
+                    new MemoryWatcher<IntPtr>(new DeepPointer(vars.QuestStateBase, 0x20, 0x0, 0x8, 0x18, 0x8, 0x0)) { Name = "statePtr" },
+                };
+                
+                MemoryWatcher loadingWatcher;
+                if(vars.gameVersion.StartsWith("1.0") || vars.gameVersion.StartsWith("1.1") || vars.gameVersion.StartsWith("1.2") || vars.gameVersion.StartsWith("1.3"))
+                {
+                    loadingWatcher = new MemoryWatcher<bool>(new DeepPointer(vars.GameInstance, 0x210, 0x4D0)) { Name = "isLoading" };
+                }
+                else if(vars.gameVersion.StartsWith("1.4"))
+                {
+                    loadingWatcher = new MemoryWatcher<bool>(new DeepPointer(vars.GameInstance, 0x220, 0x4E0)) { Name = "isLoading" };
+                }
+                else
+                {
+                    loadingWatcher = new MemoryWatcher<bool>(new DeepPointer(vars.GameInstance, 0x220, 0x4F0)) { Name = "isLoading" };
+                }
+                vars.watchers.Add(loadingWatcher);
+                vars.watchers.UpdateAll(game);
+
+
+                if(String.IsNullOrEmpty(vars.watchers["mapPath"].Current) || vars.watchers["isLoading"].Current)
+                { 
+                    throw new Exception("Quest states not initialized - trying again");
+                }
+
+                //Dont override the list of done splits if the timer is running and we rehook (e.g. after game crash)
+                if(timer.CurrentPhase == TimerPhase.NotRunning)
+                {
+                    vars.doneSplits = new List<string>();
+                }
+
+                vars.stateOffsets = new Dictionary<string, int>();
+                vars.currentStates = new Dictionary<string, int>();
+                //Old States is currently completely unused, might consider removing it
+                vars.oldStates = new Dictionary<string, int>();
+                vars.dlc1Found = false;
+                vars.dlc2Found = false;
+
+                IntPtr currentStatePtr = vars.watchers["statePtr"].Current;
+                for (int i = 0; i < 4000; i++)
+                {
+                    string key = new DeepPointer(currentStatePtr + (i * 0x20), 0).DerefString(game, 255);
+
+                    //Sometimes certain state entries get deleted when they aren't useful anymore (e.g. clearing the path at the beginning of the game)
+                    //This will leave a nullptr gap in the array, hence we have to continue here rather than break
+                    if (String.IsNullOrEmpty(key))
+                    {
+                        continue;
+                    }
+
+                    if(key == "0701_CaptiveFreed")
+                    {
+                        vars.trueEndingOffset = (i * 0x20) + 0x10;
+                    }
+
+                    if(key == "XFH_n_StoryLoadingScreen_State")
+                    {
+                        vars.dlc1EndingOffset = (i * 0x20) + 0x10;
+                        vars.dlc1Found = true;
+                    }
+                    
+                    if(!vars.trackedStates.Contains(key) || vars.stateOffsets.ContainsKey(key))
+                        continue;
+                    
+                    int value = game.ReadValue<int>(currentStatePtr + (i * 0x20) + 0x10);
+                    vars.stateOffsets.Add(key, (i * 0x20) + 0x10);
+                    vars.currentStates.Add(key, value);
+                    vars.oldStates.Add(key, value);
+
+                    //If the timer is running, we disregard all states that were set completed during init
+                    if(timer.CurrentPhase == TimerPhase.Running && settings[key] && value > 0)
+                    {
+                        vars.doneSplits.Add(key);
+                        print(key + " was completed when running init - considering it done.");
+                    }
+                }
+
+                if(timer.CurrentPhase == TimerPhase.Running && vars.dlc1Found && (game.ReadValue<int>((IntPtr)(currentStatePtr + vars.dlc1EndingOffset)) > 0))
+                {
+                    vars.doneSplits.Add("dlc1Ending");
+                    print("DLC1 Ending was completed when running init - considering it done.");
+                }
+
+                current.map = "None";
+                current.loading = true;
+                current.cutscene = "None";
+                current.dlc1Completed = true;
+                vars.startAfterNextLoad = false;
+                vars.splitOnNextLoad = false;
+                vars.initialized = true;
+                print("Initialization: Completed");
+            }
+            catch (Exception ex)
+            {
+                print("Initialization: "+ex.Message);
+                Thread.Sleep(2000);
+                continue;
+            }
         }
-
-        if(key == "0701_CaptiveFreed")
-        {
-            vars.trueEndingOffset = (i * 0x20) + 0x10;
-        }
-
-        if(key == "XFH_n_StoryLoadingScreen_State")
-        {
-            vars.dlc1EndingOffset = (i * 0x20) + 0x10;
-            vars.dlc1Found = true;
-        }
-        
-        if(!vars.trackedStates.Contains(key) || vars.stateOffsets.ContainsKey(key))
-            continue;
-        
-        int value = game.ReadValue<int>(currentStatePtr + (i * 0x20) + 0x10);
-        vars.stateOffsets.Add(key, (i * 0x20) + 0x10);
-        vars.currentStates.Add(key, value);
-        vars.oldStates.Add(key, value);
-
-        //If the timer is running, we disregard all states that were set completed during init
-        if(timer.CurrentPhase == TimerPhase.Running && settings[key] && value > 0)
-        {
-            vars.doneSplits.Add(key);
-            print(key + " was completed when running init - considering it done.");
-        }
-    }
-
-    if(timer.CurrentPhase == TimerPhase.Running && vars.dlc1Found && (game.ReadValue<int>((IntPtr)(currentStatePtr + vars.dlc1EndingOffset)) > 0))
-    {
-        vars.doneSplits.Add("dlc1Ending");
-        print("DLC1 Ending was completed when running init - considering it done.");
-    }
-
-    current.map = "None";
-    current.loading = true;
-    current.cutscene = "None";
-    current.dlc1Completed = true;
-    vars.startAfterNextLoad = false;
-    vars.splitOnNextLoad = false;
+    });
 }
 
 update
 {
+    if(!vars.initialized)
+    {
+        return false;
+    }
+    
     vars.watchers.UpdateAll(game);
     current.loading = vars.watchers["isLoading"].Current;
     current.cutscene = vars.watchers["cutscenePathPtr"].Current == IntPtr.Zero ? "None" : Path.GetFileNameWithoutExtension(game.ReadString((IntPtr)(vars.watchers["cutscenePathPtr"].Current), 1024));
@@ -326,5 +354,11 @@ isLoading
 
 exit
 {
+    vars.CancelSource.Cancel();
     timer.IsGameTimePaused = true;
+}
+
+shutdown
+{
+    vars.CancelSource.Cancel();
 }
